@@ -1,1 +1,1126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06111b">
+<title>Finora — Keuangan Usaha</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<style>
+:root{
+  --bg:#06111b;--card:#0b1a27;--card2:#102235;--line:#1b3042;
+  --green:#00e49a;--green2:#00bd7d;--white:#f5f8fc;
+  --muted:#91a3b5;--red:#ff5268;--pink:#ee75bd
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--white);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:active{transform:scale(.985)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.hidden{display:none!important}
+.app{width:100%;max-width:430px;min-height:100dvh;margin:0 auto;padding:12px 16px calc(100px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:850;font-size:21px;letter-spacing:-.7px}
+.brand svg{width:31px;height:31px;flex-shrink:0}
+.round{border:1px solid var(--line);background:var(--card);color:var(--white);border-radius:50%;height:40px;width:40px;font-size:17px;display:grid;place-items:center;flex-shrink:0}
+h1{font-size:23px;letter-spacing:-.6px;line-height:1.25;margin:0 0 7px}
+h2{font-size:17px;margin:0}
+h3{font-size:13px;margin:0}
+p{line-height:1.6}
+.muted{color:var(--muted)}
+.small{font-size:11px}
+.subheading{color:var(--muted);font-size:11px;line-height:1.6;margin:0 0 17px}
+.balance{padding:18px 15px;border-radius:15px;background:linear-gradient(120deg,#00895c,#00885d);margin:15px 0 10px;position:relative;overflow:hidden}
+.balance:after{content:"";position:absolute;right:-60px;top:-90px;width:170px;height:170px;border-radius:50%;border:23px solid #ffffff0b;pointer-events:none}
+.balance-label{font-size:11px;color:#d4ffec}
+.balance-amount{font-size:27px;font-weight:850;letter-spacing:-.8px;margin:7px 0;overflow-wrap:anywhere}
+.balance-foot{font-size:10px;color:#d4ffec}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:var(--card);border:1px solid #102c3c;border-radius:13px;padding:12px;min-width:0}
+.stat-label{font-size:10px;color:var(--muted);margin-bottom:8px}
+.stat-amount{font-size:clamp(13px,3.8vw,17px);font-weight:800;overflow-wrap:anywhere}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:21px 0 10px}
+.text-btn{background:none;border:0;color:var(--green);font-size:10px;font-weight:750;padding:8px}
+.card{background:var(--card);border:1px solid #132a3a;border-radius:14px;padding:12px;margin-bottom:10px}
+.chart{height:118px;display:flex;gap:9px;align-items:stretch;padding-top:7px}
+.chart-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px}
+.chart-bars{height:86px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.bar{width:8px;max-width:40%;border-radius:5px 5px 2px 2px;min-height:2px}
+.chart-label{font-size:9px;color:var(--muted)}
+.legend{display:flex;gap:15px;color:var(--muted);font-size:10px;margin-top:10px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.tx{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid #ffffff0b}
+.tx:last-child{border-bottom:0}
+.tx-icon{height:36px;width:36px;flex-shrink:0;border-radius:11px;display:grid;place-items:center;background:#123d35;color:var(--green);font-size:17px}
+.tx-icon.expense{background:#38232e;color:#ff92a6}
+.tx-main{flex:1;min-width:0}
+.tx-title{font-weight:700;font-size:12px;overflow-wrap:anywhere}
+.tx-date{font-size:10px;color:var(--muted);margin-top:4px}
+.tx-right{text-align:right;flex-shrink:0;max-width:48%}
+.tx-money{font-weight:750;font-size:11px;white-space:normal;overflow-wrap:anywhere}
+.empty{text-align:center;color:var(--muted);font-size:11px;padding:23px 8px;line-height:1.8}
+.nav{position:fixed;z-index:100;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;padding:8px 7px calc(8px + env(safe-area-inset-bottom));background:rgba(5,17,28,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--line)}
+.nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:45px;background:none;border:0;color:#8295a8;padding:4px 0;font-size:10px;white-space:nowrap;border-radius:10px}
+.nav-item .ico{font-size:21px;line-height:23px}
+.nav-item.active{color:var(--green)}
+.nav-add{justify-self:center;align-self:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border-radius:50%;border:3px solid #07131f;background:var(--green);color:#04271c;font-size:27px;font-weight:400;line-height:1;display:flex;align-items:center;justify-content:center;margin:0;box-shadow:0 0 0 1px #00e49a65}
+.btn{border:0;border-radius:10px;padding:12px 14px;font-weight:750;font-size:12px;display:inline-flex;align-items:center;justify-content:center;min-height:42px;text-align:center}
+.btn-green{background:var(--green);color:#05271c}
+.btn-muted{background:var(--card2);border:1px solid var(--line);color:var(--white)}
+.btn-danger{background:#49232d;color:#ffc4ce}
+.full{width:100%}
+.field{display:grid;gap:7px;margin:14px 0}
+.field label{font-size:11px;font-weight:650;color:#d0dce7}
+.field input,.field select,.field textarea,.search{width:100%;padding:12px;background:#081521;border:1px solid var(--line);border-radius:10px;color:var(--white);outline:none;min-width:0;font-size:13px;min-height:43px}
+.field input:focus,.field select:focus,.field textarea:focus,.search:focus{border-color:var(--green)}
+.field input::placeholder,.field textarea::placeholder,.search::placeholder{color:#71869a}
+.field select{color-scheme:dark}
+.field input[type="date"]{color-scheme:dark}
+.type-tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:3px 0 17px}
+.type-tabs button{padding:13px 8px;border:1px solid var(--line);background:var(--card2);color:var(--white);border-radius:12px;font-size:12px;font-weight:750;min-height:72px}
+.type-tabs .chosen.income{border-color:var(--green);background:#0b352c;color:var(--green)}
+.type-tabs .chosen.expense{border-color:var(--red);background:#38202b;color:#ff92a6}
+.form-card{padding:14px}
+.row{display:flex;gap:9px}
+.row>*{flex:1;min-width:0}
+.toolbar{display:flex;gap:8px;margin:12px 0}
+.toolbar>*{flex:1;min-width:0}
+.toolbar select{background:var(--card);color:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:12px}
+.tool{display:flex;align-items:center;gap:11px;width:100%;padding:13px;margin-bottom:10px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--white);min-height:65px}
+.tool-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#103b32;color:var(--green);font-size:21px;flex-shrink:0}
+.tool-icon.pink{background:#3b263b;color:var(--pink)}
+.tool-info{flex:1;min-width:0}
+.tool-title{font-size:12px;font-weight:750;margin-bottom:4px}
+.tool-desc{font-size:10px;color:var(--muted);line-height:1.55}
+.chevron{font-size:21px;color:#8296a9}
+.result{background:#09291f;border:1px solid #17664d;border-radius:13px;padding:13px;margin-top:14px}
+.result-title{font-weight:750;margin-bottom:9px;font-size:12px}
+.result-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff10;font-size:11px}
+.result-row:last-child{border:0}
+.result-row b{text-align:right;overflow-wrap:anywhere}
+.result-total{color:var(--green);font-size:14px}
+.bill-status{display:inline-block;border-radius:7px;background:#103c30;color:#9bffda;padding:4px 7px;font-size:9px;margin-top:5px}
+.bill-status.due{background:#46222d;color:#ffb3c2}
+.profile{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff0d}
+.profile:last-child{border:0}
+.profile-icon{width:36px;height:36px;flex-shrink:0;border-radius:11px;background:var(--card2);display:grid;place-items:center;font-size:17px}
+.profile-info{flex:1;min-width:0}
+.profile-name{font-weight:700;font-size:12px}
+.profile-desc{font-size:10px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.pill{background:#103a2f;color:var(--green);padding:5px 8px;border-radius:9px;font-size:10px}
+.profile-action{width:100%;text-align:left;color:var(--white);background:transparent;border:0;font:inherit;cursor:pointer;min-height:60px}
+.profile-action:active{background:#102235;border-radius:10px}
+.notice{padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.6;margin-bottom:12px;overflow-wrap:anywhere}
+.auth-screen{min-height:100dvh;display:grid;place-items:center;padding:20px}
+.auth-card{width:100%;max-width:400px;padding:22px;background:var(--card);border:1px solid var(--line);border-radius:20px}
+.auth-card h1{margin-top:22px}
+.auth-switch{background:none;border:0;color:var(--green);padding:12px 0;font-size:12px}
+footer{text-align:center;color:#61778a;font-size:10px;padding:20px 0}
+button:disabled{opacity:.55;cursor:not-allowed}
+@media(min-width:500px){.app{padding-left:20px;padding-right:20px}}
+</style>
+</head>
+<body>
+
+<section class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M7 20C7 11 13 6 22 6h17l-9 9H22c-4 0-6 2-6 6v6l-9 8V20Z" fill="#00e49a"/>
+        <path d="M41 28c0 9-6 14-15 14H9l9-9h8c4 0 6-2 6-6v-6l9-8v15Z" fill="#00e49a"/>
+        <path d="M18 27l9-9h8l-9 9h-8Z" fill="#f5f8fc"/>
+      </svg>
+      Finora
+    </div>
+    <p class="muted">Kelola keuangan pribadi dan usaha dengan lebih mudah.</p>
+    <h1 id="authHeading">Selamat datang</h1>
+    <p class="muted small" id="authSub">Masuk ke akun Finora kamu.</p>
+    <div id="authMessage"></div>
+    <form id="authForm">
+      <div class="field"><label for="email">Email</label><input type="email" id="email" placeholder="nama@email.com" autocomplete="email" required></div>
+      <div class="field"><label for="password">Kata sandi</label><input type="password" id="password" minlength="6" placeholder="Minimal 6 karakter" autocomplete="current-password" required></div>
+      <div class="field hidden" id="confirmField"><label for="confirmPassword">Ulangi kata sandi</label><input type="password" id="confirmPassword" minlength="6" autocomplete="new-password"></div>
+      <button class="btn btn-green full" id="authSubmit" type="submit">Masuk</button>
+    </form>
+    <button class="auth-switch" id="toggleAuth" type="button">Belum punya akun? Daftar</button>
+    <button class="auth-switch" id="forgotPassword" type="button">Lupa kata sandi?</button>
+  </div>
+</section>
+
+<div class="app hidden" id="app">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M7 20C7 11 13 6 22 6h17l-9 9H22c-4 0-6 2-6 6v6l-9 8V20Z" fill="#00e49a"/>
+        <path d="M41 28c0 9-6 14-15 14H9l9-9h8c4 0 6-2 6-6v-6l9-8v15Z" fill="#00e49a"/>
+        <path d="M18 27l9-9h8l-9 9h-8Z" fill="#f5f8fc"/>
+      </svg>
+      Finora
+    </div>
+    <button class="round" id="quickSettings" type="button" aria-label="Pengaturan">⚙</button>
+  </header>
+  <main id="screen"></main>
+  <footer>Finora · powered by pratama andika</footer>
+</div>
+
+<nav class="nav hidden" id="nav" aria-label="Navigasi utama">
+  <button class="nav-item active" type="button" data-page="home"><span class="ico">⌂</span><span>Beranda</span></button>
+  <button class="nav-item" type="button" data-page="history"><span class="ico">▤</span><span>Riwayat</span></button>
+  <button class="nav-add" type="button" id="addNav" aria-label="Tambah transaksi">+</button>
+  <button class="nav-item" type="button" data-page="more"><span class="ico">☷</span><span>Lainnya</span></button>
+  <button class="nav-item" type="button" data-page="settings"><span class="ico">⚙</span><span>Pengaturan</span></button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+const SUPABASE_URL="https://doqevpmqvhcnyffhmeia.supabase.co";
+const SUPABASE_KEY="sb_publishable_DFfi7L-5zCsznP3BcQBUDA_VLaHw9X2";
+const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const $=id=>document.getElementById(id);
+const screen=$("screen");
+
+let user=null;
+let page="home";
+let authMode="login";
+let txType="income";
+let filter="all";
+let search="";
+let data={transactions:[],bills:[]};
+
+const uid=()=>window.crypto?.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=n=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n)||0);
+const formatNumber=n=>new Intl.NumberFormat("id-ID",{maximumFractionDigits:0,useGrouping:true}).format(Number(n)||0);
+const digits=v=>String(v??"").replace(/\D/g,"");
+const today=()=>{
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
+const dateFmt=d=>d?new Date(d+"T12:00:00").toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"}):"-";
+
+function notice(el,msg){
+  el.innerHTML='<div class="notice">'+esc(msg)+'</div>';
+}
+
+/* Input angka: hanya digit, tampilan otomatis memakai pemisah ribuan. */
+function bindNumberInput(input){
+  if(!input)return;
+  input.type="text";
+  input.inputMode="numeric";
+  input.autocomplete="off";
+  input.addEventListener("input",()=>{
+    const raw=digits(input.value);
+    const formatted=raw?formatNumber(Number(raw)): "";
+    input.value=formatted;
+  });
+}
+
+function readNumber(value){
+  const raw=digits(value);
+  return raw?Number(raw):0;
+}
+
+function totals(){
+  return data.transactions.reduce((a,t)=>{
+    const amount=Math.max(0,Number(t.amount)||0);
+    if(t.type==="income")a.income+=amount;
+    if(t.type==="expense")a.expense+=amount;
+    return a;
+  },{income:0,expense:0});
+}
+
+function setPage(p){
+  page=p;
+  render();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+async function save(show=true){
+  try{
+    localStorage.setItem("finora_data",JSON.stringify(data));
+  }catch(e){
+    console.error("Gagal menyimpan data lokal:",e);
+  }
+
+  if(!user)return true;
+
+  try{
+    const {error}=await client.from("finora_data").upsert({
+      user_id:user.id,
+      payload:data,
+      updated_at:new Date().toISOString()
+    },{onConflict:"user_id"});
+
+    if(error)throw error;
+    return true;
+  }catch(error){
+    console.error(error);
+    if(show){
+      alert("Data tersimpan di perangkat, tetapi sinkronisasi gagal. Periksa tabel dan izin Supabase.\n"+error.message);
+    }
+    return false;
+  }
+}
+
+async function load(){
+  try{
+    const {data:row,error}=await client.from("finora_data")
+      .select("payload")
+      .eq("user_id",user.id)
+      .maybeSingle();
+
+    if(error)throw error;
+
+    if(row&&row.payload){
+      data={
+        transactions:Array.isArray(row.payload.transactions)?row.payload.transactions:[],
+        bills:Array.isArray(row.payload.bills)?row.payload.bills:[]
+      };
+    }else{
+      try{
+        const local=JSON.parse(localStorage.getItem("finora_data")||"null");
+        if(local){
+          data={
+            transactions:Array.isArray(local.transactions)?local.transactions:[],
+            bills:Array.isArray(local.bills)?local.bills:[]
+          };
+        }
+      }catch(e){}
+      await save(false);
+    }
+
+    localStorage.setItem("finora_data",JSON.stringify(data));
+  }catch(e){
+    console.error("Gagal memuat data dari server:",e);
+    try{
+      const local=JSON.parse(localStorage.getItem("finora_data")||"null");
+      if(local){
+        data={
+          transactions:Array.isArray(local.transactions)?local.transactions:[],
+          bills:Array.isArray(local.bills)?local.bills:[]
+        };
+      }
+    }catch(_){}
+  }
+}
+
+async function openApp(){
+  $("authScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("nav").classList.remove("hidden");
+  await load();
+  render();
+}
+
+function setAuthMode(m){
+  authMode=m;
+  $("authHeading").textContent=m==="login"?"Selamat datang":"Buat akun Finora";
+  $("authSub").textContent=m==="login"?"Masuk ke akun Finora kamu.":"Daftar untuk mulai mencatat keuangan.";
+  $("authSubmit").textContent=m==="login"?"Masuk":"Daftar";
+  $("confirmField").classList.toggle("hidden",m==="login");
+  $("confirmPassword").required=m==="register";
+  $("forgotPassword").classList.toggle("hidden",m!=="login");
+  $("toggleAuth").textContent=m==="login"?"Belum punya akun? Daftar":"Sudah punya akun? Masuk";
+  $("password").autocomplete=m==="login"?"current-password":"new-password";
+}
+
+$("toggleAuth").onclick=()=>{
+  setAuthMode(authMode==="login"?"register":"login");
+  $("authMessage").innerHTML="";
+};
+
+$("authForm").onsubmit=async e=>{
+  e.preventDefault();
+
+  const email=$("email").value.trim();
+  const password=$("password").value;
+  const btn=$("authSubmit");
+
+  btn.disabled=true;
+  btn.textContent="Memproses...";
+
+  try{
+    let res;
+
+    if(authMode==="register"){
+      if(password!==$("confirmPassword").value){
+        throw Error("Konfirmasi kata sandi tidak cocok.");
+      }
+
+      res=await client.auth.signUp({email,password});
+      if(res.error)throw res.error;
+
+      if(!res.data.session){
+        notice($("authMessage"),"Akun dibuat. Periksa email untuk verifikasi sebelum masuk.");
+        return;
+      }
+    }else{
+      res=await client.auth.signInWithPassword({email,password});
+      if(res.error)throw res.error;
+    }
+
+    user=res.data.user;
+    await openApp();
+  }catch(err){
+    notice($("authMessage"),err.message||"Gagal masuk.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent=authMode==="login"?"Masuk":"Daftar";
+  }
+};
+
+$("forgotPassword").onclick=async()=>{
+  const email=$("email").value.trim();
+
+  if(!email)return alert("Masukkan email terlebih dahulu.");
+
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.href});
+
+  alert(error?error.message:"Jika email terdaftar, tautan reset akan dikirim ke email.");
+};
+
+client.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT"){
+    user=null;
+    data={transactions:[],bills:[]};
+    page="home";
+    $("app").classList.add("hidden");
+    $("nav").classList.add("hidden");
+    $("authScreen").classList.remove("hidden");
+    setAuthMode("login");
+  }
+});
+
+(async()=>{
+  try{
+    const {data:s}=await client.auth.getSession();
+    if(s.session){
+      user=s.session.user;
+      await openApp();
+    }
+  }catch(e){
+    console.error(e);
+  }
+})();
+
+/* Semua navigasi menggunakan event listener yang jelas. */
+document.querySelectorAll("[data-page]").forEach(b=>{
+  b.addEventListener("click",()=>setPage(b.dataset.page));
+});
+
+$("addNav").addEventListener("click",()=>{
+  txType="income";
+  setPage("add");
+});
+
+$("quickSettings").addEventListener("click",()=>setPage("settings"));
+
+function txIcon(t){
+  return t.type==="income"?"↗":"↘";
+}
+
+function txRow(t,remove=false){
+  return `<div class="tx">
+    <div class="tx-icon ${t.type==="expense"?"expense":""}">${txIcon(t)}</div>
+    <div class="tx-main">
+      <div class="tx-title">${esc(t.name||"Transaksi")}</div>
+      <div class="tx-date">${dateFmt(t.date)}</div>
+    </div>
+    <div class="tx-right">
+      <div class="tx-money ${t.type==="income"?"green":"red"}">${t.type==="income"?"+":"−"} ${money(t.amount)}</div>
+      ${remove?`<button type="button" class="text-btn" data-remove-tx="${esc(t.id)}">Hapus</button>`:""}
+    </div>
+  </div>`;
+}
+
+function billRow(b){
+  const days=Math.ceil((new Date(b.due+"T23:59:59")-new Date())/86400000);
+  const status=b.paid?"Lunas":days<0?"Terlambat":days===0?"Hari ini":days+" hari lagi";
+
+  return `<div class="tx">
+    <div class="tx-icon ${b.paid?"":"expense"}">${b.paid?"✓":"♧"}</div>
+    <div class="tx-main">
+      <div class="tx-title">${esc(b.name)}</div>
+      <div class="tx-date">Jatuh tempo ${dateFmt(b.due)}</div>
+      <span class="bill-status ${!b.paid&&days<=3?"due":""}">${status}</span>
+    </div>
+    <div class="tx-right">
+      <div class="tx-money">${money(b.amount)}</div>
+      <button type="button" class="text-btn" data-paid="${esc(b.id)}">${b.paid?"Belum lunas":"Lunasi"}</button><br>
+      <button type="button" class="text-btn" data-remove-bill="${esc(b.id)}">Hapus</button>
+    </div>
+  </div>`;
+}
+
+function section(title,link,go){
+  return `<div class="section-head"><h3>${title}</h3><button type="button" class="text-btn" data-go="${go}">${link} ›</button></div>`;
+}
+
+function renderHome(){
+  const t=totals();
+  const recent=[...data.transactions]
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""))
+    .slice(0,4);
+
+  const months=[];
+
+  for(let i=5;i>=0;i--){
+    const d=new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth()-i);
+
+    months.push({
+      key:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),
+      label:d.toLocaleDateString("id-ID",{month:"short"}),
+      income:0,
+      expense:0
+    });
+  }
+
+  data.transactions.forEach(x=>{
+    const m=months.find(m=>m.key===(x.date||"").slice(0,7));
+    if(m&&(x.type==="income"||x.type==="expense")){
+      m[x.type]+=Number(x.amount)||0;
+    }
+  });
+
+  const max=Math.max(1,...months.flatMap(m=>[m.income,m.expense]));
+
+  screen.innerHTML=`
+    <div class="muted small">Halo, ${esc(user?.email?.split("@")[0]||"Pengguna")} 👋</div>
+    <h1 style="margin-top:7px">Kelola keuanganmu<br>dengan lebih mudah.</h1>
+    <p class="subheading">Pantau uang masuk dan keluar dalam satu tempat.</p>
+
+    <section class="balance">
+      <div class="balance-label">Saldo Total</div>
+      <div class="balance-amount">${money(t.income-t.expense)}</div>
+      <div class="balance-foot">Ringkasan seluruh transaksi kamu</div>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">↗ Pemasukan</div><div class="stat-amount green">${money(t.income)}</div></div>
+      <div class="stat"><div class="stat-label">↘ Pengeluaran</div><div class="stat-amount red">${money(t.expense)}</div></div>
+    </div>
+
+    ${section("Ringkasan Bulanan","Detail","reports")}
+
+    <section class="card">
+      <div class="chart">${months.map(m=>`
+        <div class="chart-col">
+          <div class="chart-bars">
+            <div class="bar" title="${money(m.income)}" style="height:${m.income?Math.max(3,m.income/max*100):2}%;background:var(--green)"></div>
+            <div class="bar" title="${money(m.expense)}" style="height:${m.expense?Math.max(3,m.expense/max*100):2}%;background:var(--red)"></div>
+          </div>
+          <span class="chart-label">${esc(m.label)}</span>
+        </div>`).join("")}</div>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--green)"></i>Pemasukan</span>
+        <span><i class="dot" style="background:var(--red)"></i>Pengeluaran</span>
+      </div>
+    </section>
+
+    ${section("Transaksi Terbaru","Lihat semua","history")}
+    <section class="card">
+      ${recent.length?recent.map(x=>txRow(x)).join(""):'<div class="empty">Belum ada transaksi.<br>Tekan tombol + untuk mencatat transaksi.</div>'}
+    </section>
+
+    ${section("Pengingat Tagihan","Lihat semua","bills")}
+    <section class="card">
+      ${data.bills.filter(b=>!b.paid).length
+        ?[...data.bills].filter(b=>!b.paid).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,2).map(b=>billRow(b)).join("")
+        :'<div class="empty">Tidak ada tagihan aktif.</div>'}
+    </section>`;
+}
+
+function renderAdd(){
+  screen.innerHTML=`
+    <h1>Tambah Transaksi</h1>
+    <p class="subheading">Catat pemasukan dan pengeluaranmu.</p>
+
+    <section class="card form-card">
+      <div class="type-tabs">
+        <button type="button" data-type="income" class="${txType==="income"?"chosen income":""}">↗<br><br>Pemasukan</button>
+        <button type="button" data-type="expense" class="${txType==="expense"?"chosen expense":""}">↘<br><br>Pengeluaran</button>
+      </div>
+
+      <form id="txForm">
+        <div class="field">
+          <label for="txAmount">Nominal (Rp)</label>
+          <input id="txAmount" type="text" name="amount" inputmode="numeric" pattern="[0-9. ]+" autocomplete="off" placeholder="Contoh: 150.000" required>
+        </div>
+
+        <div class="field">
+          <label for="txDate">Tanggal</label>
+          <input id="txDate" name="date" type="date" value="${today()}" required>
+        </div>
+
+        <div class="field">
+          <label for="txName">Keterangan</label>
+          <input id="txName" name="name" type="text" maxlength="120" placeholder="Contoh: Penjualan barang" required>
+        </div>
+
+        <button class="btn btn-green full" type="submit">Simpan Transaksi</button>
+      </form>
+    </section>`;
+
+  screen.querySelectorAll("[data-type]").forEach(b=>{
+    b.addEventListener("click",()=>{
+      txType=b.dataset.type;
+      renderAdd();
+    });
+  });
+
+  bindNumberInput($("txAmount"));
+
+  $("txForm").onsubmit=async e=>{
+    e.preventDefault();
+
+    const f=new FormData(e.target);
+    const amount=readNumber(f.get("amount"));
+    const name=String(f.get("name")||"").trim();
+    const date=String(f.get("date")||today());
+
+    if(!Number.isSafeInteger(amount)||amount<=0){
+      return alert("Masukkan nominal angka yang valid dan lebih dari 0.");
+    }
+
+    if(!name)return alert("Keterangan wajib diisi.");
+
+    const submit=e.submitter;
+    if(submit){
+      submit.disabled=true;
+      submit.textContent="Menyimpan...";
+    }
+
+    data.transactions.push({
+      id:uid(),
+      type:txType,
+      amount,
+      date,
+      name
+    });
+
+    await save(false);
+    setPage("home");
+
+    alert("Transaksi berhasil disimpan. Saldo, pemasukan, dan pengeluaran sudah diperbarui otomatis.");
+  };
+}
+
+function renderHistory(){
+  screen.innerHTML=`
+    <h1>Riwayat Transaksi</h1>
+    <p class="subheading">Lihat semua catatan pemasukan dan pengeluaran.</p>
+    <input class="search" id="txSearch" placeholder="⌕ Cari transaksi..." value="${esc(search)}" aria-label="Cari transaksi">
+    <div class="toolbar">
+      <select id="txFilter" aria-label="Filter transaksi">
+        <option value="all">Semua</option>
+        <option value="income">Pemasukan</option>
+        <option value="expense">Pengeluaran</option>
+      </select>
+    </div>
+    <section class="card" id="txList"></section>`;
+
+  $("txFilter").value=filter;
+
+  function draw(){
+    search=$("txSearch").value;
+    filter=$("txFilter").value;
+
+    const q=search.toLowerCase();
+    const rows=[...data.transactions]
+      .sort((a,b)=>(b.date||"").localeCompare(a.date||""))
+      .filter(t=>(filter==="all"||t.type===filter)&&`${t.name||""} ${t.date||""}`.toLowerCase().includes(q));
+
+    $("txList").innerHTML=rows.length
+      ?rows.map(t=>txRow(t,true)).join("")
+      :'<div class="empty">Transaksi tidak ditemukan.</div>';
+  }
+
+  $("txSearch").oninput=draw;
+  $("txFilter").onchange=draw;
+  draw();
+}
+
+function renderMore(){
+  screen.innerHTML=`
+    <h1>Lainnya</h1>
+    <p class="subheading">Fitur tambahan untuk membantu keuangan usahamu.</p>
+
+    <button type="button" class="tool" data-go="calculator">
+      <span class="tool-icon">▦</span>
+      <span class="tool-info"><div class="tool-title">Kalkulator Laba Bersih</div><div class="tool-desc">Hitung keuntungan atau kerugian bisnismu dengan mudah.</div></span>
+      <span class="chevron">›</span>
+    </button>
+
+    <button type="button" class="tool" data-go="bills">
+      <span class="tool-icon pink">♧</span>
+      <span class="tool-info"><div class="tool-title">Pengingat Tagihan</div><div class="tool-desc">Jangan lupa tagihan pentingmu berikutnya.</div></span>
+      <span class="chevron">›</span>
+    </button>
+
+    <div class="section-head"><h3>Fitur Tambahan</h3></div>
+
+    <button type="button" class="tool" data-go="reports">
+      <span class="tool-icon">▤</span>
+      <span class="tool-info"><div class="tool-title">Laporan Keuangan</div><div class="tool-desc">Lihat ringkasan arus kas bulanan.</div></span>
+      <span class="chevron">›</span>
+    </button>
+
+    <button type="button" class="tool" data-action="csv">
+      <span class="tool-icon">⇩</span>
+      <span class="tool-info"><div class="tool-title">Ekspor Transaksi</div><div class="tool-desc">Unduh data transaksi dalam format CSV.</div></span>
+      <span class="chevron">›</span>
+    </button>`;
+}
+
+function renderCalculator(){
+  screen.innerHTML=`
+    <h1>Kalkulator Laba Bersih</h1>
+    <p class="subheading">Hitung keuntungan penjualan barang usahamu.</p>
+
+    <section class="card form-card">
+      <form id="calcForm">
+        <div class="field"><label>Modal Awal (Rp)</label><input name="capital" type="text" inputmode="numeric" placeholder="0" required></div>
+        <div class="field"><label>Harga Jual per Barang (Rp)</label><input name="price" type="text" inputmode="numeric" placeholder="0" required></div>
+        <div class="field"><label>Jumlah Barang Terjual</label><input name="qty" type="text" inputmode="numeric" placeholder="0" required></div>
+        <div class="field"><label>Biaya Operasional (Rp)</label><input name="cost" type="text" inputmode="numeric" value="0" required></div>
+        <button class="btn btn-green full" type="submit">Hitung</button>
+      </form>
+      <div id="calcResult"></div>
+    </section>`;
+
+  screen.querySelectorAll("#calcForm input").forEach(bindNumberInput);
+
+  $("calcForm").onsubmit=e=>{
+    e.preventDefault();
+
+    const f=new FormData(e.target);
+    const capital=readNumber(f.get("capital"));
+    const price=readNumber(f.get("price"));
+    const qty=readNumber(f.get("qty"));
+    const cost=readNumber(f.get("cost"));
+
+    const revenue=price*qty;
+    const profit=revenue-capital-cost;
+
+    $("calcResult").innerHTML=`
+      <div class="result">
+        <div class="result-title">Hasil Perhitungan</div>
+        <div class="result-row"><span>Total Modal</span><b>${money(capital)}</b></div>
+        <div class="result-row"><span>Total Pendapatan</span><b>${money(revenue)}</b></div>
+        <div class="result-row"><span>Biaya Operasional</span><b>${money(cost)}</b></div>
+        <div class="result-row result-total"><b>${profit<0?"Kerugian Bersih":"Laba Bersih"}</b><b>${money(profit)}</b></div>
+      </div>`;
+  };
+}
+
+function renderBills(){
+  const bills=[...data.bills].sort((a,b)=>a.due.localeCompare(b.due));
+
+  screen.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div><h1>Pengingat Tagihan</h1><p class="subheading" style="margin-bottom:12px">Atur tagihan agar tidak terlambat membayar.</p></div>
+      <button type="button" class="round" id="newBill" style="color:var(--green)" aria-label="Tambah tagihan">+</button>
+    </div>
+    <section class="card">
+      ${bills.length
+        ?bills.map(b=>billRow(b)).join("")
+        :`<div class="empty"><div style="font-size:34px;color:var(--green);margin-bottom:10px">▦</div><b style="color:var(--white)">Belum ada tagihan</b><br>Tambahkan tagihan agar kamu tidak<br>terlambat membayarnya.<br><button type="button" class="btn btn-green" id="addFirstBill" style="margin-top:14px">+ Tambah Tagihan</button></div>`}
+    </section>
+    <div id="billFormWrap"></div>`;
+
+  const add=$("newBill");
+  if(add)add.onclick=showBillForm;
+
+  const first=$("addFirstBill");
+  if(first)first.onclick=showBillForm;
+}
+
+function showBillForm(){
+  $("billFormWrap").innerHTML=`
+    <section class="card form-card">
+      <h2>Tambah Tagihan</h2>
+      <form id="billForm">
+        <div class="field"><label>Nama Tagihan</label><input name="name" placeholder="Contoh: Listrik, Internet" maxlength="80" required></div>
+        <div class="field"><label>Nominal (Rp)</label><input name="amount" type="text" inputmode="numeric" placeholder="0" required></div>
+        <div class="field"><label>Tanggal Jatuh Tempo</label><input name="due" type="date" value="${today()}" required></div>
+        <div class="field"><label>Pengingat</label><select name="remind"><option value="0">Hari jatuh tempo</option><option value="1">1 hari sebelum</option><option value="3" selected>3 hari sebelum</option><option value="7">7 hari sebelum</option></select></div>
+        <div class="field"><label>Catatan (opsional)</label><input name="note" maxlength="150" placeholder="Catatan tambahan"></div>
+        <div class="row">
+          <button type="button" class="btn btn-muted" id="cancelBill">Batal</button>
+          <button type="submit" class="btn btn-green">Simpan</button>
+        </div>
+      </form>
+    </section>`;
+
+  const amount=$("billForm").elements.amount;
+  bindNumberInput(amount);
+
+  $("cancelBill").onclick=()=>$("billFormWrap").innerHTML="";
+
+  $("billForm").onsubmit=async e=>{
+    e.preventDefault();
+
+    const f=new FormData(e.target);
+    const amountValue=readNumber(f.get("amount"));
+    const name=String(f.get("name")||"").trim();
+
+    if(!Number.isSafeInteger(amountValue)||amountValue<=0){
+      return alert("Nominal harus lebih dari 0.");
+    }
+    if(!name)return alert("Nama tagihan wajib diisi.");
+
+    data.bills.push({
+      id:uid(),
+      name,
+      amount:amountValue,
+      due:f.get("due"),
+      remind:+f.get("remind"),
+      note:String(f.get("note")||"").trim(),
+      paid:false
+    });
+
+    await save(false);
+    renderBills();
+    alert("Tagihan berhasil disimpan.");
+  };
+}
+
+function renderReports(){
+  const t=totals();
+  const monthly={};
+
+  data.transactions.forEach(x=>{
+    const m=(x.date||"").slice(0,7)||"Lainnya";
+    if(!monthly[m])monthly[m]={income:0,expense:0};
+    if(x.type==="income"||x.type==="expense"){
+      monthly[m][x.type]+=Number(x.amount)||0;
+    }
+  });
+
+  const keys=Object.keys(monthly).sort().slice(-6);
+  const max=Math.max(1,...keys.flatMap(k=>[monthly[k].income,monthly[k].expense]));
+
+  screen.innerHTML=`
+    <h1>Laporan Keuangan</h1>
+    <p class="subheading">Ringkasan pemasukan dan pengeluaranmu.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Pemasukan</div><div class="stat-amount green">${money(t.income)}</div></div>
+      <div class="stat"><div class="stat-label">Pengeluaran</div><div class="stat-amount red">${money(t.expense)}</div></div>
+    </div>
+
+    <div class="section-head"><h3>Arus Kas Bulanan</h3></div>
+
+    <section class="card">
+      ${keys.length
+        ?`<div class="chart">${keys.map(k=>`
+          <div class="chart-col">
+            <div class="chart-bars">
+              <div class="bar" title="${money(monthly[k].income)}" style="height:${Math.max(2,monthly[k].income/max*100)}%;background:var(--green)"></div>
+              <div class="bar" title="${money(monthly[k].expense)}" style="height:${Math.max(2,monthly[k].expense/max*100)}%;background:var(--red)"></div>
+            </div>
+            <span class="chart-label">${esc(k)}</span>
+          </div>`).join("")}</div>
+          <div class="legend"><span><i class="dot" style="background:var(--green)"></i>Pemasukan</span><span><i class="dot" style="background:var(--red)"></i>Pengeluaran</span></div>`
+        :'<div class="empty">Belum ada data laporan.</div>'}
+    </section>
+
+    <section class="card">
+      <div class="result-row"><span>Saldo</span><b>${money(t.income-t.expense)}</b></div>
+      <div class="result-row"><span>Jumlah transaksi</span><b>${data.transactions.length}</b></div>
+      <button type="button" class="btn btn-green full" id="reportCSV" style="margin-top:12px">Ekspor CSV</button>
+    </section>`;
+
+  $("reportCSV").onclick=exportCSV;
+}
+
+function renderSettings(){
+  screen.innerHTML=`
+    <h1>Pengaturan</h1>
+    <p class="subheading">Kelola akun dan data Finora.</p>
+
+    <section class="card">
+      <button type="button" class="profile profile-action" id="accountBtn">
+        <span class="profile-icon">◉</span>
+        <span class="profile-info"><span class="profile-name" style="display:block">Akun Saya</span><span class="profile-desc">${esc(user?.email||"Tidak ada email")}</span></span>
+        <span class="chevron">›</span>
+      </button>
+
+      <button type="button" class="profile profile-action" id="syncInfoBtn">
+        <span class="profile-icon">⟳</span>
+        <span class="profile-info"><span class="profile-name" style="display:block">Sinkronisasi</span><span class="profile-desc">Simpan data ke akun Supabase</span></span>
+        <span class="chevron">›</span>
+      </button>
+
+      <button type="button" class="profile profile-action" id="backupBtn">
+        <span class="profile-icon">▣</span>
+        <span class="profile-info"><span class="profile-name" style="display:block">Backup Data</span><span class="profile-desc">Simpan salinan data ke perangkat</span></span>
+        <span class="chevron">›</span>
+      </button>
+
+      <button type="button" class="profile profile-action" id="helpBtn">
+        <span class="profile-icon">?</span>
+        <span class="profile-info"><span class="profile-name" style="display:block">Bantuan</span><span class="profile-desc">Petunjuk penggunaan Finora</span></span>
+        <span class="chevron">›</span>
+      </button>
+
+      <button type="button" class="profile profile-action" id="aboutBtn">
+        <span class="profile-icon">ⓘ</span>
+        <span class="profile-info"><span class="profile-name" style="display:block">Tentang Finora</span><span class="profile-desc">Informasi aplikasi · Versi 1.0.0</span></span>
+        <span class="chevron">›</span>
+      </button>
+    </section>
+
+    <section class="card">
+      <h3>Data & Sinkronisasi</h3>
+      <p class="muted small">Simpan atau pulihkan transaksi dan tagihan.</p>
+      <div class="row">
+        <button type="button" class="btn btn-green" id="backupJSON">Backup JSON</button>
+        <label class="btn btn-muted" style="text-align:center;cursor:pointer">Pulihkan JSON<input type="file" id="restoreJSON" accept=".json,application/json" hidden></label>
+      </div>
+      <button type="button" class="btn btn-muted full" id="syncNow" style="margin-top:10px">Sinkronkan Ulang</button>
+      <button type="button" class="btn btn-muted full" id="exportCSV" style="margin-top:10px">Ekspor CSV</button>
+    </section>
+
+    <section class="card">
+      <button type="button" class="btn btn-danger full" id="resetData">Hapus Semua Data</button>
+      <button type="button" class="btn btn-danger full" id="logout" style="margin-top:10px">Keluar Akun</button>
+    </section>`;
+
+  $("accountBtn").onclick=()=>{
+    alert("Informasi Akun\n\nEmail: "+(user?.email||"-")+"\n\nUntuk mengganti kata sandi, gunakan fitur Lupa kata sandi pada halaman masuk.");
+  };
+
+  $("syncInfoBtn").onclick=async()=>{
+    const btn=$("syncInfoBtn");
+    btn.disabled=true;
+
+    try{
+      const ok=await save(false);
+      alert(ok
+        ?"Sinkronisasi berhasil. Data lokal dan akun sudah diperbarui."
+        :"Sinkronisasi gagal. Data lokal tetap tersimpan jika penyimpanan perangkat tersedia. Periksa koneksi dan konfigurasi Supabase.");
+    }finally{
+      btn.disabled=false;
+    }
+  };
+
+  $("backupBtn").onclick=backupJSON;
+  $("backupJSON").onclick=backupJSON;
+  $("exportCSV").onclick=exportCSV;
+
+  $("helpBtn").onclick=()=>{
+    alert("BANTUAN FINORA\n\n1. Tekan tombol + untuk mencatat transaksi.\n2. Pilih Pemasukan atau Pengeluaran.\n3. Masukkan nominal menggunakan angka dan isi keterangan.\n4. Nominal otomatis memakai pemisah ribuan saat diketik.\n5. Saldo, pemasukan, dan pengeluaran diperbarui otomatis setelah transaksi disimpan.\n6. Buka Riwayat untuk mencari atau menghapus transaksi.\n7. Gunakan Backup JSON untuk menyimpan salinan data.\n8. Gunakan Sinkronkan Ulang untuk menyimpan data ke Supabase.");
+  };
+
+  $("aboutBtn").onclick=()=>{
+    alert("FINORA\nVersi 1.0.0\n\nAplikasi pencatatan keuangan pribadi dan usaha untuk membantu memantau pemasukan, pengeluaran, saldo, laporan, dan tagihan.\n\nPowered by pratama andika.");
+  };
+
+  $("syncNow").onclick=async()=>{
+    const btn=$("syncNow");
+    btn.disabled=true;
+    btn.textContent="Menyinkronkan...";
+
+    try{
+      const ok=await save(false);
+      alert(ok
+        ?"Sinkronisasi berhasil."
+        :"Sinkronisasi gagal. Periksa koneksi dan konfigurasi Supabase.");
+    }finally{
+      btn.disabled=false;
+      btn.textContent="Sinkronkan Ulang";
+    }
+  };
+
+  $("restoreJSON").onchange=async e=>{
+    const f=e.target.files[0];
+    if(!f)return;
+
+    try{
+      const p=JSON.parse(await f.text());
+
+      if(!p||!Array.isArray(p.transactions)||!Array.isArray(p.bills)){
+        throw Error("Format backup tidak sesuai.");
+      }
+
+      if(!confirm("Ganti data saat ini dengan backup ini?"))return;
+
+      data={
+        transactions:p.transactions
+          .filter(t=>t&&["income","expense"].includes(t.type)&&Number(t.amount)>0)
+          .map(t=>({
+            id:t.id||uid(),
+            type:t.type,
+            amount:Number(t.amount),
+            date:t.date||today(),
+            name:String(t.name||"Transaksi")
+          })),
+        bills:p.bills
+          .filter(b=>b&&Number(b.amount)>=0)
+          .map(b=>({
+            ...b,
+            id:b.id||uid(),
+            name:String(b.name||"Tagihan"),
+            amount:Number(b.amount)||0,
+            due:b.due||today(),
+            paid:Boolean(b.paid)
+          }))
+      };
+
+      await save(false);
+      render();
+      alert("Data berhasil dipulihkan.");
+    }catch(err){
+      alert("Gagal memulihkan: "+err.message);
+    }finally{
+      e.target.value="";
+    }
+  };
+
+  $("resetData").onclick=async()=>{
+    if(!confirm("Hapus seluruh transaksi dan tagihan? Data yang dihapus tidak bisa dikembalikan kecuali kamu punya backup."))return;
+
+    data={transactions:[],bills:[]};
+    await save(false);
+    render();
+    alert("Data berhasil dihapus.");
+  };
+
+  $("logout").onclick=async()=>{
+    if(!confirm("Yakin ingin keluar dari akun Finora?"))return;
+
+    const {error}=await client.auth.signOut();
+    if(error)alert(error.message);
+  };
+}
+
+function download(text,type,name){
+  const blob=new Blob([text],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+
+  a.href=url;
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function backupJSON(){
+  download(JSON.stringify(data,null,2),"application/json","finora-backup.json");
+}
+
+function exportCSV(){
+  const rows=[["Tanggal","Jenis","Keterangan","Nominal"]];
+
+  data.transactions.forEach(t=>{
+    rows.push([
+      t.date,
+      t.type==="income"?"Pemasukan":"Pengeluaran",
+      t.name,
+      t.amount
+    ]);
+  });
+
+  const csv="\uFEFF"+rows.map(r=>
+    r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")
+  ).join("\r\n");
+
+  download(csv,"text/csv;charset=utf-8","finora-transaksi.csv");
+}
+
+function render(){
+  document.querySelectorAll(".nav-item").forEach(b=>{
+    b.classList.toggle("active",b.dataset.page===page);
+  });
+
+  const routes={
+    home:renderHome,
+    add:renderAdd,
+    history:renderHistory,
+    more:renderMore,
+    calculator:renderCalculator,
+    bills:renderBills,
+    reports:renderReports,
+    settings:renderSettings
+  };
+
+  (routes[page]||renderHome)();
+}
+
+/* Delegasi klik untuk tombol dinamis agar tetap berfungsi setelah render. */
+screen.addEventListener("click",async e=>{
+  const go=e.target.closest("[data-go]");
+
+  if(go){
+    setPage(go.dataset.go);
+    return;
+  }
+
+  const csv=e.target.closest("[data-action='csv']");
+
+  if(csv){
+    exportCSV();
+    return;
+  }
+
+  const del=e.target.closest("[data-remove-tx]");
+
+  if(del){
+    if(confirm("Hapus transaksi ini?")){
+      data.transactions=data.transactions.filter(t=>String(t.id)!==del.dataset.removeTx);
+      await save(false);
+      render();
+    }
+    return;
+  }
+
+  const paid=e.target.closest("[data-paid]");
+
+  if(paid){
+    const b=data.bills.find(x=>String(x.id)===paid.dataset.paid);
+
+    if(b){
+      b.paid=!b.paid;
+      await save(false);
+      render();
+    }
+    return;
+  }
+
+  const delBill=e.target.closest("[data-remove-bill]");
+
+  if(delBill){
+    if(confirm("Hapus tagihan ini?")){
+      data.bills=data.bills.filter(b=>String(b.id)!==delBill.dataset.removeBill);
+      await save(false);
+      render();
+    }
+  }
+});
+
+/* Menangani tombol kembali browser agar navigasi tidak terasa macet. */
+window.addEventListener("popstate",()=>{
+  if(!$("app").classList.contains("hidden")){
+    page="home";
+    render();
+  }
+});
+
+})();
+</script>
+</body>
+</html>
